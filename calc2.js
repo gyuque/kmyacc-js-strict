@@ -307,12 +307,6 @@ function yyparse()
 
 
 	/* Lexical analyzer */
-
-	var buffer;
-	var token;
-	var toktype;
-
-
 	function isletter(c)
 	{
 	  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
