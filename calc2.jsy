@@ -1,0 +1,124 @@
+/* Calculator in kmyacc+JavaScript. */
+
+%{
+(function() {
+	"use strict";
+%}
+
+
+%token NUMBER IDENTIFIER
+
+%left '+' '-'
+%left '*' '/'
+
+%%
+
+start:	line;
+
+/*
+lines:
+        | lines line { $$ = $1 + $2; }
+        ;
+*/
+
+line	: expr  { setAnswer($1); }
+	| { $$ = "(empty line ignored)"; }
+	| error { $$ = ""; }
+	;
+
+expr	: expr '+' expr { $$ = $1 + $3; }
+	| expr '-' expr { $$ = $1 - $3; }
+	| expr '*' expr { $$ = $1 * $3; }
+	| expr '/' expr { $$ = $1 / $3; }
+	| '(' expr ')' { $$ = $2; }
+	| NUMBER { $$ = $1; }
+	;
+
+%%
+
+	/* Lexical analyzer */
+
+	var buffer;
+	var token;
+	var toktype;
+
+
+	function isletter(c)
+	{
+	  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+	}
+
+	function isdigit(c)
+	{
+	  return ('0' <= c && c <= '9');
+	}
+
+	function yylex()
+	{
+	  while (buffer != ""
+	         && (buffer.charAt(0) == ' ' || buffer.charAt(0) == '\t')) {
+	    buffer = buffer.substr(1);
+	  }
+	  if (buffer.length == 0)
+	    return 0;
+	  if (isletter(buffer.charAt(0))) {
+	    var i;
+	    for (i = 0; i < buffer.length; i++) {
+	      if (!isletter(buffer.charAt(i)) && !isdigit(buffer.charAt(i)))
+	        break;
+	    }
+	    token = buffer.substr(0, i);
+	    buffer = buffer.substr(i);
+	    return IDENTIFIER;
+	  } else if (isdigit(buffer.charAt(0))) {
+	    var i;
+	    for (i = 0; i < buffer.length; i++) {
+	      if (!isdigit(buffer.charAt(i)))
+	        break;
+	    }
+	    token = buffer.substr(0, i);
+	    buffer = buffer.substr(i);
+	    yylval = token - 0;
+	    return NUMBER;
+	  } else {
+	    token = buffer.substr(0, 1);
+	    buffer = buffer.substr(1);
+	    return token.charCodeAt(0);
+	  }
+	}
+
+	function yyerror(msg) {
+		writeAnswer(msg, true);
+	}
+
+	var ans_area;
+	function launch_calc() {
+		var txt = document.getElementById('exp');
+		ans_area = document.getElementById('ans');
+		txt.value = "";
+
+		var closure = function() {
+			buffer = txt.value;
+			writeAnswer('');
+			yyparse();
+		};
+
+		txt.addEventListener('keyup', closure, false);
+		txt.addEventListener('blur', closure, false);
+		txt.addEventListener('mousedown', closure, false);
+	}
+
+	function setAnswer(a) {
+		writeAnswer(a);
+	}
+
+	function writeAnswer(msg, err) {
+		ans_area.innerHTML = "&nbsp;";
+		ans_area.className = err ? 'error' : '';
+		if (msg || msg == 0)
+			ans_area.appendChild( document.createTextNode(msg) );
+	}
+
+	// export
+	window.launch_calc = launch_calc;
+})();
